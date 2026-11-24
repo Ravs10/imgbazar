@@ -1,10 +1,9 @@
 "use client";
 export const runtime = 'edge';
-import { use, useState } from "react";
+import { useState } from "react";
 
-export default function DeletePage({ params }: { params: Promise<{ id: string[] }> }) {
-  const { id } = use(params);
-  const public_id = id.join("/");
+export default function DeletePage({ params }: { params: { id: string[] } }) {
+  const public_id = params.id.join("/");
   const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(false);
 
