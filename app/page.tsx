@@ -41,13 +41,21 @@ export default function Home() {
       setUploading(true);
       const fd = new FormData(); fd.append("file", file);
       try {
-        const res = await fetch("/api/upload", { method: "POST", body: fd });
+        const res = await fetch("https://imgbazar.run4ravish.workers.dev/upload", {
+          method: "POST",
+          body: fd
+        });
         const data = await res.json();
-        const item: Item = { name: file.name, url: data.url, del: data.del, time: new Date().toLocaleString() };
+        if (!res.ok || !data.url) {
+          alert("Upload Failed: " + (data.error || JSON.stringify(data)));
+          setUploading(false);
+          continue;
+        }
+        const item: Item = { name: file.name, url: data.url, del: data.public_id || data.del || "x", time: new Date().toLocaleString() };
         const newHist = [item, ...history];
         setHistory(newHist); localStorage.setItem("imgbazar_history", JSON.stringify(newHist));
         setResults([item, ...results]);
-      } catch { alert("Upload Failed! Env Check Karo"); }
+      } catch (e: any) { alert("Upload Failed! Real Error: " + e.message); }
       setUploading(false);
     }
   };
