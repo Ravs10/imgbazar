@@ -41,6 +41,8 @@ export default function Home() {
   // DELETE FIX: History + Results dono se delete hoga
   const deleteItem = (delId: string) => {
     if (!confirm("Pakka delete karna hai? Ye sirf yahan se hategi, Cloudinary se delete karne ke liye neeche Removal Link use karo.")) return;
+   // Asli delete - Cloudinary se bhi udao
+fetch("/api/delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ public_id: delId }) });
     const newHist = history.filter((it) => it.del !== delId);
     saveHistory(newHist);
     setResults(results.filter((it) => it.del !== delId));
