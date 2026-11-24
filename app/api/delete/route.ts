@@ -1,5 +1,12 @@
+export const runtime = 'edge';
+
 import { NextResponse } from "next/server";
-import crypto from "crypto";
+
+async function sha1Hex(text: string) {
+  const data = new TextEncoder().encode(text);
+  const hash = await crypto.subtle.digest("SHA-1", data);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
 
 export async function POST(req: Request) {
   try {
@@ -10,7 +17,7 @@ export async function POST(req: Request) {
     const key = process.env.CLOUDINARY_API_KEY!;
     const secret = process.env.CLOUDINARY_API_SECRET!;
     const timestamp = Math.floor(Date.now() / 1000);
-    const signature = crypto.createHash("sha1").update(`public_id=${public_id}&timestamp=${timestamp}${secret}`).digest("hex");
+    const signature = await sha1Hex(`public_id=${public_id}&timestamp=${timestamp}${secret}`);
 
     const fd = new FormData();
     fd.append("public_id", public_id);
