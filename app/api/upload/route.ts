@@ -1,14 +1,4 @@
 export const runtime = 'edge';
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-
-const s3 = new S3Client({
-  region: "auto",
-  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY!,
-    secretAccessKey: process.env.R2_SECRET_KEY!,
-  },
-});
 
 export async function POST(req: Request) {
   try {
@@ -16,19 +6,32 @@ export async function POST(req: Request) {
     const file = form.get("file") as File;
     if (!file) return Response.json({ error: "No file" }, { status: 400 });
 
-    const ext = file.name.split(".").pop() || "png";
-    const fileName = Date.now().toString(36) + Math.random().toString(36).slice(2, 6) + "." + ext;
-    const buffer = Buffer.from(await file.arrayBuffer());
+    const cloudName = "yndad4ue";
+    const apiKey = "892495511144558";
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
 
-    await s3.send(new PutObjectCommand({
-      Bucket: process.env.R2_BUCKET!,
-      Key: fileName,
-      Body: buffer,
-      ContentType: file.type,
-    }));
+    if (!apiSecret) {
+      return Response.json({ error: "ENV MISSING: CLOUDINARY_API_SECRET not set in Cloudflare" }, { status: 500 });
+    }
 
-    const url = `${process.env.R2_PUBLIC_URL}/${fileName}`;
-    return Response.json({ url, fileName, del: Math.random().toString(36).slice(2, 10) });
+    const timestamp = Math.floor(Date.now() / 1000);
+    const folder = "imgbazar";
+    const toSign = `folder=${folder}&timestamp=${timestamp}${apiSecret}`;
+    const buf = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(toSign));
+    const signature = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+
+    const up = new FormData();
+    up.append("file", file);
+    up.append("api_key", apiKey);
+    up.append("timestamp", timestamp.toString());
+    up.append("folder", folder);
+    up.append("signature", signature);
+
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: "POST", body: up });
+    const data: any = await res.json();
+    if (!data.secure_url) return Response.json({ error: "Cloudinary fail", details: data }, { status: 500 });
+
+    return Response.json({ url: data.secure_url, public_id: data.public_id });
   } catch (e: any) {
     return Response.json({ error: e.message }, { status: 500 });
   }
