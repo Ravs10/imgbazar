@@ -11,14 +11,15 @@ export async function POST(req: Request) {
     const apiSecret = process.env.CLOUDINARY_API_SECRET;
 
     if (!apiSecret) {
-      return Response.json({ error: "ENV MISSING: CLOUDINARY_API_SECRET not set in Cloudflare" }, { status: 500 });
+      return Response.json({ error: "ENV MISSING: CLOUDINARY_API_SECRET not set" }, { status: 500 });
     }
 
     const timestamp = Math.floor(Date.now() / 1000);
     const folder = "imgbazar";
     const toSign = `folder=${folder}&timestamp=${timestamp}${apiSecret}`;
     const buf = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(toSign));
-    const signature = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+    const hashArray = Array.from(new Uint8Array(buf));
+    const signature = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 
     const up = new FormData();
     up.append("file", file);
