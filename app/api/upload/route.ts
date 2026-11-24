@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -10,7 +12,7 @@ export async function POST(req: NextRequest) {
     const apiKey = "892495511144558";
     const secret = process.env.CLOUDINARY_API_SECRET;
 
-    if (!secret) return NextResponse.json({ error: "ENV MISSING: Pages me CLOUDINARY_API_SECRET nahi hai!" }, { status: 500 });
+    if (!secret) return NextResponse.json({ error: "ENV MISSING: Pages me CLOUDINARY_API_SECRET nahi hai! Pages > Settings > Environment variables me dalo!" }, { status: 500 });
 
     const timestamp = Math.floor(Date.now() / 1000);
     const folder = "imgbazar";
