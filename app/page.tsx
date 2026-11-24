@@ -35,25 +35,25 @@ export default function Home() {
   };
 
   const uploadFiles = async (files: FileList | File[]) => {
-  for (let file of Array.from(files)) {
-    if (!file.type.startsWith("image/")) continue;
-    if (file.size > 10 * 1024 * 1024) { alert("10MB se Badi File!"); continue; }
-    setUploading(true);
-    const fd = new FormData(); fd.append("file", file);
-    try {
-      const res = await fetch("https://imgbazar.run4ravish.workers.dev/upload", { method: "POST", body: fd });
-      const text = await res.text();
-      let data: any = {};
-      try { data = JSON.parse(text); } catch { alert("Worker ne ye bheja (JSON nahi): " + text.slice(0, 300)); setUploading(false); continue; }
-      if (!res.ok || !data.url) { alert("Upload Failed: " + (data.error || text.slice(0,300))); setUploading(false); continue; }
-      const item: Item = { name: file.name, url: data.url, del: data.public_id || data.del || "x", time: new Date().toLocaleString() };
-      const newHist = [item, ...history];
-      setHistory(newHist); localStorage.setItem("imgbazar_history", JSON.stringify(newHist));
-      setResults([item, ...results]);
-    } catch (e: any) { alert("Upload Failed! Real Error: " + e.message); }
-    setUploading(false);
-  }
-};
+    for (let file of Array.from(files)) {
+      if (!file.type.startsWith("image/")) continue;
+      if (file.size > 10 * 1024 * 1024) { alert("10MB se Badi File!"); continue; }
+      setUploading(true);
+      const fd = new FormData(); fd.append("file", file);
+      try {
+        const res = await fetch("/api/upload", { method: "POST", body: fd });
+        const text = await res.text();
+        let data: any = {};
+        try { data = JSON.parse(text); } catch { alert("Server ne ye bheja (JSON nahi): " + text.slice(0, 300)); setUploading(false); continue; }
+        if (!res.ok || !data.url) { alert("Upload Failed: " + (data.error || text.slice(0, 300))); setUploading(false); continue; }
+        const item: Item = { name: file.name, url: data.url, del: data.public_id || data.del || "x", time: new Date().toLocaleString() };
+        const newHist = [item, ...history];
+        setHistory(newHist); localStorage.setItem("imgbazar_history", JSON.stringify(newHist));
+        setResults([item, ...results]);
+      } catch (e: any) { alert("Upload Failed! Real Error: " + e.message); }
+      setUploading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#0A0A14] text-white px-4">
