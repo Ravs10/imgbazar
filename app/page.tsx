@@ -66,47 +66,41 @@ export default function Home() {
     setTimeout(() => setToast(""), 3000);
   };
 
-  // MAIN FIX: Direct Cloudinary Upload - No /api/upload Needed
+  // MAIN FIX: Try All Presets + Show Real Error
   const uploadFiles = async (fileList: FileList | File[]) => {
     const files = Array.from(fileList).filter((f) => f.type.startsWith("image/"));
     if (files.length === 0) return;
     setUploading(true);
     const newItems: HistoryItem[] = [];
+    const PRESETS_TO_TRY = ["imgbazar_preset", "ml_default", "unsigned_preset", "velora"];
 
     for (let i = 0; i < files.length; i++) {
       setProgressText(`Uploading ${i + 1} / ${files.length}...`);
-      try {
-        const form = new FormData();
-        form.append("file", files[i]);
-        form.append("upload_preset", UPLOAD_PRESET);
-        form.append("folder", "imgbazar");
-
-        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
-          method: "POST",
-          body: form,
-        });
-        const data = await res.json();
-        if (data.secure_url) {
-          newItems.push({
-            public_id: data.public_id,
-            url: data.secure_url,
-            name: files[i].name,
-            size: files[i].size,
-            date: new Date().toLocaleDateString(),
-          });
-        } else {
-          showToast("Cloudinary Error: " + (data.error?.message || "Preset Check Karo"));
-        }
-      } catch (e: any) {
-        showToast("Upload Failed: " + e.message);
+      let uploaded = false;
+      let lastError = "";
+      for (const preset of PRESETS_TO_TRY) {
+        try {
+          const form = new FormData();
+          form.append("file", files[i]);
+          form.append("upload_preset", preset);
+          form.append("folder", "imgbazar");
+          const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: "POST", body: form });
+          const data = await res.json();
+          if (data.secure_url) {
+            newItems.push({ public_id: data.public_id, url: data.secure_url, name: files[i].name, size: files[i].size, date: new Date().toLocaleDateString() });
+            uploaded = true;
+            break;
+          } else {
+            lastError = data.error?.message || "Unknown Error";
+          }
+        } catch (e: any) { lastError = e.message; }
       }
+      if (!uploaded) showToast("Error: " + lastError);
     }
 
     if (newItems.length > 0) {
       saveHistory([...newItems, ...history]);
       showToast(`${newItems.length} Photos Uploaded!`);
-    } else {
-      showToast("0 Files Uploaded - Preset Error Hai");
     }
     setUploading(false);
     setProgressText("");
