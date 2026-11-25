@@ -161,21 +161,24 @@ export default function Home() {
     thumbnail: item.url.replace("/upload/", "/upload/w_300,h_300,c_fill/"),
   });
 
-  const filtered = history.filter((h) => h.name.toLowerCase().includes(search.toLowerCase()));
+    const filtered = history.filter((h) => h.name.toLowerCase().includes(search.toLowerCase()));
   const currentLinks = selectedPhoto ? getLinks(selectedPhoto) : null;
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
+
   const selectAll = () => {
     if (selectedIds.length === filtered.length) setSelectedIds([]);
     else setSelectedIds(filtered.map(h => h.public_id));
   };
+
   const bulkRemove = () => {
     if (!confirm(`Remove ${selectedIds.length} photos from History?`)) return;
     saveHistory(history.filter(h => !selectedIds.includes(h.public_id)));
     setSelectedIds([]); setBulkMode(false); showToast("Bulk Removed!");
   };
+
   const bulkDeletePermanent = async () => {
     if (!confirm(`${selectedIds.length} photos PERMANENT delete? Cloudinary se bhi hat jayengi, link band ho jayega!`)) return;
     showToast("Bulk Deleting...");
