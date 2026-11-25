@@ -3,8 +3,12 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://imgbazar.pages.dev"),
+  verification: {
+    google: "w_wvZBVQdtjW8zt-02VoE47Y4Tm7sOjySsoFsTfwnpk",
+  },
   title: "ImgBazar - Free Image Hosting | Upload Image & Get Direct Link",
-  description: "ImgBazar is a free image hosting tool. Upload image, get direct link, markdown, HTML, BBCode, Blogger, WordPress link instantly. No login, unlimited bandwidth, QR code & delete link free.",
+  description: "ImgBazar is a free image hosting tool...",
+  // ... baaki sab same rahega
   keywords: ["free image hosting", "upload image", "image hosting", "get image link", "direct image link", "imgbb alternative", "postimages alternative", "free image upload", "blogger image hosting", "wordpress image upload", "image to link", "photo upload link", "how to upload image", "bulk delete image", "image to direct link"],
   authors: [{ name: "Velora" }],
   robots: "index, follow",
