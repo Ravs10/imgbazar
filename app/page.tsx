@@ -22,6 +22,7 @@ export default function Home() {
   const [qr, setQr] = useState("");
   const [qrUrl, setQrUrl] = useState("");
   const [search, setSearch] = useState("");
+  const [showDeleteMenu, setShowDeleteMenu] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -111,15 +112,62 @@ export default function Home() {
     showToast("Link Copied!");
   };
 
+  const shareLink = async (url: string, name: string) => {
+    if (navigator.share) {
+      try { await navigator.share({ title: name, text: name, url }); } catch {}
+    } else {
+      copyLink(url);
+      showToast("Share nahi hai, Link Copy ho gaya!");
+    }
+  };
+
+  const downloadImage = (url: string, name: string) => {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    a.target = "_blank";
+    a.click();
+    showToast("Download Started!");
+  };
+
   const showQR = (url: string) => {
-    setQr(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`);
+    setQr(`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(url)}`);
     setQrUrl(url);
   };
 
-  const deleteOne = async (public_id: string) => {
-    if (!confirm("Delete this photo?")) return;
+  // 1. REMOVE - Sirf History se hatayega
+  const removeFromHistory = (public_id: string) => {
+    if (!confirm("Sirf History se hataye? Photo ka link chalta rahega.")) return;
     saveHistory(history.filter((h) => h.public_id !== public_id));
+    setShowDeleteMenu(null);
     showToast("Removed From History");
+  };
+
+  // 2. DELETE PERMANENT - Cloudinary se hamesha ke liye
+  const deletePermanent = async (item: HistoryItem) => {
+    if (!confirm(`PERMANENT DELETE?\n\n${item.name}\n\nYe photo Cloudinary se hamesha ke liye delete ho jayegi, link bhi kaam nahi karega. Pakka?`)) return;
+    setShowDeleteMenu(null);
+    showToast("Deleting Permanent...");
+    try {
+      const res = await fetch("/api/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ public_id: item.public_id }),
+      });
+      const data = await res.json();
+      if (data.success || res.ok) {
+        saveHistory(history.filter((h) => h.public_id !== item.public_id));
+        if (selectedPhoto?.public_id === item.public_id) setSelectedPhoto(null);
+        showToast("Permanently Deleted!");
+      } else {
+        // Agar API nahi bani hai to sirf history se hatao aur batao
+        saveHistory(history.filter((h) => h.public_id !== item.public_id));
+        showToast("Removed - Permanent ke liye STEP 2 wala API banao");
+      }
+    } catch {
+      saveHistory(history.filter((h) => h.public_id !== item.public_id));
+      showToast("Removed From History");
+    }
   };
 
   const getLinks = (item: HistoryItem) => ({
@@ -183,11 +231,27 @@ export default function Home() {
             <div key={h.public_id} className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden">
               <div className="relative cursor-pointer" onClick={() => setSelectedPhoto(h)}>
                 <img src={h.url} className="w-full h-[170px] object-cover" />
-                <button onClick={(e) => { e.stopPropagation(); deleteOne(h.public_id); }} className="absolute top-2 right-2 bg-red-500 w-7 h-7 rounded-full text-[12px] font-bold">✕</button>
+                <button onClick={(e) => { e.stopPropagation(); setShowDeleteMenu(showDeleteMenu === h.public_id ? null : h.public_id); }} className="absolute top-2 right-2 bg-red-500 w-7 h-7 rounded-full text-[12px] font-bold">✕</button>
+                {/* Delete Menu - Remove / Permanent */}
+                {showDeleteMenu === h.public_id && (
+                  <div className="absolute top-10 right-2 bg-[#1A1A1A] border border-white/20 rounded-xl p-2 w-[160px] z-10" onClick={(e) => e.stopPropagation()}>
+                    <button onClick={() => removeFromHistory(h.public_id)} className="w-full text-left px-2 py-2 rounded-lg text-[12px] hover:bg-white/10">🙈 Remove (History Only)</button>
+                    <button onClick={() => deletePermanent(h)} className="w-full text-left px-2 py-2 rounded-lg text-[12px] text-red-400 hover:bg-red-500/20 font-bold">🗑️ Delete Permanent</button>
+                    <button onClick={() => setShowDeleteMenu(null)} className="w-full text-center text-[11px] text-white/40 mt-1">Cancel</button>
+                  </div>
+                )}
               </div>
               <div className="p-3">
                 <p className="text-[13px] font-bold truncate">{h.name}</p>
                 <p onClick={() => setSelectedPhoto(h)} className="text-emerald-400 text-[12px] mt-1 cursor-pointer">Click to Get Links →</p>
+                {/* NEW - 4 Buttons Direct on Card */}
+                <div className="grid grid-cols-4 gap-1 mt-2">
+                  <button onClick={() => copyLink(h.url)} className="bg-white/10 py-1.5 rounded-lg text-[14px]">📋</button>
+                  <button onClick={() => shareLink(h.url, h.name)} className="bg-white/10 py-1.5 rounded-lg text-[14px]">🔗</button>
+                  <button onClick={() => showQR(h.url)} className="bg-white/10 py-1.5 rounded-lg text-[14px]">📷</button>
+                  <button onClick={() => downloadImage(h.url, h.name)} className="bg-white/10 py-1.5 rounded-lg text-[14px]">⬇️</button>
+                </div>
+                <p className="text-[10px] text-white/30 mt-1 text-center">📋 Copy • 🔗 Share • 📷 QR • ⬇️ Download</p>
               </div>
             </div>
           ))}
@@ -207,21 +271,35 @@ export default function Home() {
             </div>
             <div className="bg-black/50 p-3 rounded-xl mt-3 break-all text-[11px]">{(currentLinks as any)[activeTab]}</div>
             <button onClick={() => copyLink((currentLinks as any)[activeTab])} className="w-full mt-3 bg-orange-500 font-bold py-2.5 rounded-full text-[13px]">Copy {activeTab} Link</button>
-            <div className="grid grid-cols-3 gap-2 mt-2">
-              <a href={selectedPhoto.url} target="_blank" className="text-center bg-white/10 py-2 rounded-xl text-[12px]">⬇️ Download</a>
-              <button onClick={() => showQR(selectedPhoto.url)} className="bg-white/10 py-2 rounded-xl text-[12px]">📷 QR Code</button>
-              <button onClick={() => { navigator.clipboard.writeText(selectedPhoto.url); showToast("Copied!"); }} className="bg-white/10 py-2 rounded-xl text-[12px]">📋 Copy</button>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              <button onClick={() => shareLink(selectedPhoto.url, selectedPhoto.name)} className="bg-gradient-to-r from-orange-500 to-pink-500 py-2.5 rounded-xl text-[12px] font-bold">🔗 Share Photo</button>
+              <button onClick={() => showQR(selectedPhoto.url)} className="bg-white/10 py-2.5 rounded-xl text-[12px]">📷 QR Code</button>
             </div>
+            <div className="grid grid-cols-3 gap-2 mt-2">
+              <button onClick={() => downloadImage(selectedPhoto.url, selectedPhoto.name)} className="bg-white/10 py-2 rounded-xl text-[12px]">⬇️ Download</button>
+              <button onClick={() => copyLink(selectedPhoto.url)} className="bg-white/10 py-2 rounded-xl text-[12px]">📋 Copy</button>
+              <button onClick={() => removeFromHistory(selectedPhoto.public_id)} className="bg-white/10 py-2 rounded-xl text-[12px]">🙈 Remove</button>
+            </div>
+            <button onClick={() => deletePermanent(selectedPhoto)} className="w-full mt-2 bg-red-500/20 border border-red-500/40 text-red-300 font-bold py-2.5 rounded-xl text-[12px]">🗑️ Delete Permanent - Cloudinary Se Bhi</button>
             <button onClick={() => setSelectedPhoto(null)} className="w-full mt-3 text-white/50 text-[12px]">Close</button>
           </div>
         </div>
       )}
 
+      {/* QR Modal - NEW with Share / Download */}
       {qr && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50" onClick={() => setQr("")}>
-          <div className="bg-white text-black rounded-3xl p-6 text-center max-w-[300px] w-full" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-black">Scan QR Code</h3><img src={qr} className="w-[200px] mx-auto mt-3" /><p className="text-[11px] break-all mt-2 text-gray-500">{qrUrl}</p>
-            <button onClick={() => setQr("")} className="mt-4 bg-black text-white px-6 py-2 rounded-full text-[13px] font-bold">Close</button>
+          <div className="bg-white text-black rounded-3xl p-6 text-center max-w-[320px] w-full" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-black">Scan QR Code</h3>
+            <p className="text-[11px] text-gray-500 mt-1">Dusre phone ke Camera se scan karo,<br />photo khul jayegi</p>
+            <img src={qr} className="w-[200px] mx-auto mt-3" />
+            <p className="text-[11px] break-all mt-2 text-gray-500">{qrUrl}</p>
+            <div className="flex gap-2 mt-4 justify-center">
+              <button onClick={() => shareLink(qrUrl, "Photo")} className="bg-orange-500 text-white px-4 py-2 rounded-full text-[12px] font-bold">🔗 Share Link</button>
+              <a href={qr} download="qr-code.png" className="bg-black text-white px-4 py-2 rounded-full text-[12px] font-bold">⬇️ QR Download</a>
+            </div>
+            <button onClick={() => copyLink(qrUrl)} className="mt-2 w-full bg-gray-100 py-2 rounded-full text-[12px] font-bold">📋 Copy Link</button>
+            <button onClick={() => setQr("")} className="mt-3 text-gray-500 text-[12px]">Close</button>
           </div>
         </div>
       )}
