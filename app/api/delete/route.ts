@@ -9,14 +9,19 @@ export async function POST(req: Request) {
     const api_secret = process.env.CLOUDINARY_API_SECRET;
 
     if (!api_key || !api_secret) {
-      return Response.json({ error: "API_KEY ya API_SECRET Cloudflare me nahi hai!", api_key_exists: !!api_key, secret_exists: !!api_secret });
+      return Response.json({
+        error: "API_KEY or API_SECRET is missing in Cloudflare!",
+        api_key_exists: !!api_key,
+        secret_exists: !!api_secret
+      });
     }
 
-    // Basic Auth - Signature se zyada aasan aur pakka
+    // Basic Auth - More reliable than signature
     const auth = btoa(`${api_key}:${api_secret}`);
 
     const form = new FormData();
     form.append("public_id", public_id);
+    form.append("invalidate", "true"); // Clears CDN cache so link stops working instantly
 
     const res = await fetch(`https://api.cloudinary.com/v1_1/${cloud_name}/image/destroy`, {
       method: "POST",
