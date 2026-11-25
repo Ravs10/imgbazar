@@ -38,7 +38,6 @@ export default function Home() {
     } catch {}
   }, []);
 
-  // Paste Support
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
       const files: File[] = [];
@@ -67,14 +66,12 @@ export default function Home() {
     setTimeout(() => setToast(""), 3000);
   };
 
-  // MAIN FIX: Try All Presets + Show Real Error
   const uploadFiles = async (fileList: FileList | File[]) => {
     const files = Array.from(fileList).filter((f) => f.type.startsWith("image/"));
     if (files.length === 0) return;
     setUploading(true);
     const newItems: HistoryItem[] = [];
     const PRESETS_TO_TRY = ["imgbazar_preset", "ml_default", "unsigned_preset", "velora"];
-
     for (let i = 0; i < files.length; i++) {
       setProgressText(`Uploading ${i + 1} / ${files.length}...`);
       let uploaded = false;
@@ -91,14 +88,11 @@ export default function Home() {
             newItems.push({ public_id: data.public_id, url: data.secure_url, name: files[i].name, size: files[i].size, date: new Date().toLocaleDateString() });
             uploaded = true;
             break;
-          } else {
-            lastError = data.error?.message || "Unknown Error";
-          }
+          } else { lastError = data.error?.message || "Unknown Error"; }
         } catch (e: any) { lastError = e.message; }
       }
       if (!uploaded) showToast("Error: " + lastError);
     }
-
     if (newItems.length > 0) {
       saveHistory([...newItems, ...history]);
       showToast(`${newItems.length} Photos Uploaded!`);
@@ -123,10 +117,7 @@ export default function Home() {
 
   const downloadImage = (url: string, name: string) => {
     const a = document.createElement("a");
-    a.href = url;
-    a.download = name;
-    a.target = "_blank";
-    a.click();
+    a.href = url; a.download = name; a.target = "_blank"; a.click();
     showToast("Download Started!");
   };
 
@@ -135,7 +126,7 @@ export default function Home() {
     setQrUrl(url);
   };
 
-  // 1. REMOVE - Sirf History se hatayega
+  // REMOVE - Sirf History se
   const removeFromHistory = (public_id: string) => {
     if (!confirm("Sirf History se hataye? Photo ka link chalta rahega.")) return;
     saveHistory(history.filter((h) => h.public_id !== public_id));
@@ -143,31 +134,18 @@ export default function Home() {
     showToast("Removed From History");
   };
 
-  // 2. DELETE PERMANENT - Cloudinary se hamesha ke liye
-  const deletePermanent = async (item: HistoryItem) => {
-    if (!confirm(`PERMANENT DELETE?\n\n${item.name}\n\nYe photo Cloudinary se hamesha ke liye delete ho jayegi, link bhi kaam nahi karega. Pakka?`)) return;
-    setShowDeleteMenu(null);
-    showToast("Deleting Permanent...");
-    try {
-      const res = await fetch("/api/delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ public_id: item.public_id }),
-      });
-      const data = await res.json();
-      if (data.success || res.ok) {
-        saveHistory(history.filter((h) => h.public_id !== item.public_id));
-        if (selectedPhoto?.public_id === item.public_id) setSelectedPhoto(null);
-        showToast("Permanently Deleted!");
-      } else {
-        // Agar API nahi bani hai to sirf history se hatao aur batao
-        saveHistory(history.filter((h) => h.public_id !== item.public_id));
-        showToast("Removed - Permanent ke liye STEP 2 wala API banao");
-      }
-    } catch {
-      saveHistory(history.filter((h) => h.public_id !== item.public_id));
-      showToast("Removed From History");
-    }
+  // DELETE PERMANENT - Tera Purana System - Delete Page pe bhejega
+  const getDeleteLink = (public_id: string) => `${window.location.origin}/delete/${public_id}`;
+
+  const deletePermanent = (item: HistoryItem) => {
+    if (!confirm(`PERMANENT DELETE?\n\n${item.name}\n\nDelete Page khulega, wahan Yes dabate hi Cloudinary se hamesha ke liye delete ho jayegi.`)) return;
+    window.location.href = `/delete/${item.public_id}`;
+  };
+
+  const copyDeleteLink = (public_id: string) => {
+    const link = getDeleteLink(public_id);
+    navigator.clipboard.writeText(link);
+    showToast("Delete Link Copied! Kisi ko bhi bhej sakte ho.");
   };
 
   const getLinks = (item: HistoryItem) => ({
@@ -187,7 +165,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#0D0D0D] text-white px-4 py-5 max-w-[1100px] mx-auto">
-      {/* OLD BEAUTIFUL HEADER - WAPAS */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
           <div className="text-[38px]">📸</div>
@@ -205,7 +182,6 @@ export default function Home() {
         <p className="text-white/50 text-[14px] mt-3">Blogger, WordPress, Bazaru, Reddit, GitHub, Forums - Kahi bhi Use Karo. 9 Tarah ke Link Instantly!</p>
       </div>
 
-      {/* OLD BEAUTIFUL UPLOAD BOX */}
       <div onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); uploadFiles(e.dataTransfer.files); }} onClick={() => fileRef.current?.click()} className="mt-7 border-2 border-dashed border-white/20 rounded-[30px] p-8 text-center cursor-pointer bg-white/[0.02]">
         <div className="text-[55px]">📷</div>
         <p className="font-bold text-[20px] mt-2">Drag & Drop Images Here</p>
@@ -215,7 +191,6 @@ export default function Home() {
         {uploading && <p className="mt-4 text-orange-400 font-bold text-[14px] animate-pulse">{progressText}</p>}
       </div>
 
-      {/* History */}
       <div className="flex justify-between items-center mt-8">
         <h3 className="font-bold text-[19px]">🕒 Your History ({filtered.length})</h3>
         {history.length > 0 && <button onClick={() => { if (confirm("Clear All History?")) saveHistory([]); }} className="bg-red-500/20 border border-red-500/40 text-red-300 px-4 py-1.5 rounded-full text-[13px] font-bold">Clear All</button>}
@@ -232,11 +207,11 @@ export default function Home() {
               <div className="relative cursor-pointer" onClick={() => setSelectedPhoto(h)}>
                 <img src={h.url} className="w-full h-[170px] object-cover" />
                 <button onClick={(e) => { e.stopPropagation(); setShowDeleteMenu(showDeleteMenu === h.public_id ? null : h.public_id); }} className="absolute top-2 right-2 bg-red-500 w-7 h-7 rounded-full text-[12px] font-bold">✕</button>
-                {/* Delete Menu - Remove / Permanent */}
                 {showDeleteMenu === h.public_id && (
-                  <div className="absolute top-10 right-2 bg-[#1A1A1A] border border-white/20 rounded-xl p-2 w-[160px] z-10" onClick={(e) => e.stopPropagation()}>
+                  <div className="absolute top-10 right-2 bg-[#1A1A1A] border border-white/20 rounded-xl p-2 w-[180px] z-10" onClick={(e) => e.stopPropagation()}>
                     <button onClick={() => removeFromHistory(h.public_id)} className="w-full text-left px-2 py-2 rounded-lg text-[12px] hover:bg-white/10">🙈 Remove (History Only)</button>
                     <button onClick={() => deletePermanent(h)} className="w-full text-left px-2 py-2 rounded-lg text-[12px] text-red-400 hover:bg-red-500/20 font-bold">🗑️ Delete Permanent</button>
+                    <button onClick={() => copyDeleteLink(h.public_id)} className="w-full text-left px-2 py-2 rounded-lg text-[12px] hover:bg-white/10">🔗 Copy Delete Link</button>
                     <button onClick={() => setShowDeleteMenu(null)} className="w-full text-center text-[11px] text-white/40 mt-1">Cancel</button>
                   </div>
                 )}
@@ -244,7 +219,6 @@ export default function Home() {
               <div className="p-3">
                 <p className="text-[13px] font-bold truncate">{h.name}</p>
                 <p onClick={() => setSelectedPhoto(h)} className="text-emerald-400 text-[12px] mt-1 cursor-pointer">Click to Get Links →</p>
-                {/* NEW - 4 Buttons Direct on Card */}
                 <div className="grid grid-cols-4 gap-1 mt-2">
                   <button onClick={() => copyLink(h.url)} className="bg-white/10 py-1.5 rounded-lg text-[14px]">📋</button>
                   <button onClick={() => shareLink(h.url, h.name)} className="bg-white/10 py-1.5 rounded-lg text-[14px]">🔗</button>
@@ -258,7 +232,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* Links Modal */}
       {selectedPhoto && currentLinks && (
         <div className="fixed inset-0 bg-black/80 flex items-end sm:items-center justify-center p-4 z-50" onClick={() => setSelectedPhoto(null)}>
           <div className="bg-[#1A1A1A] rounded-3xl p-5 w-full max-w-[500px] max-h-[85vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
@@ -281,12 +254,12 @@ export default function Home() {
               <button onClick={() => removeFromHistory(selectedPhoto.public_id)} className="bg-white/10 py-2 rounded-xl text-[12px]">🙈 Remove</button>
             </div>
             <button onClick={() => deletePermanent(selectedPhoto)} className="w-full mt-2 bg-red-500/20 border border-red-500/40 text-red-300 font-bold py-2.5 rounded-xl text-[12px]">🗑️ Delete Permanent - Cloudinary Se Bhi</button>
+            <button onClick={() => copyDeleteLink(selectedPhoto.public_id)} className="w-full mt-2 bg-white/10 font-bold py-2.5 rounded-xl text-[12px]">🔗 Copy Delete Link</button>
             <button onClick={() => setSelectedPhoto(null)} className="w-full mt-3 text-white/50 text-[12px]">Close</button>
           </div>
         </div>
       )}
 
-      {/* QR Modal - NEW with Share / Download */}
       {qr && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50" onClick={() => setQr("")}>
           <div className="bg-white text-black rounded-3xl p-6 text-center max-w-[320px] w-full" onClick={(e) => e.stopPropagation()}>
