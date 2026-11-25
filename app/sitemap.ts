@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
 
+export const runtime = "edge";
+
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
@@ -7,12 +9,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 1,
-    },
-    {
-      url: "https://imgbazar.pages.dev/delete",
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.5,
     },
   ];
 }
