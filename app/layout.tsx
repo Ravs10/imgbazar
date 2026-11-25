@@ -2,7 +2,9 @@ import "./globals.css";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "ImgBazar by Velora - Free Image Hosting",
+  metadataBase: new URL("https://imgbazar.pages.dev"),
+  title: "ImgBazar - Free Image Hosting | Upload Image & Get Direct Link",
+  // ... baaki sab same
   description: "Upload Image, Get Direct Link, HTML, Markdown, BBCode Instantly. No Login. Free.",
 };
 
