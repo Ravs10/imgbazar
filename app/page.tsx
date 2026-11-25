@@ -1,6 +1,5 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import QRCode from "qrcode";
 
 type HistoryItem = {
   public_id: string;
@@ -96,9 +95,9 @@ export default function Home() {
     } else { copyLink(url); }
   };
 
-  const showQR = async (url: string) => {
-    const qrData = await QRCode.toDataURL(url);
-    setQr(qrData); setQrUrl(url);
+  const showQR = (url: string) => {
+    setQr(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`);
+    setQrUrl(url);
   };
 
   const deleteOne = async (public_id: string) => {
@@ -132,21 +131,18 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#0A0A14] text-white px-4 py-6 max-w-[1100px] mx-auto">
-      {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="font-black text-[26px]">📸 <span className="text-purple-400">Img</span>Bazar</h1>
         <span className="bg-white/10 px-3 py-1 rounded-full text-[11px]">PRO • Advanced</span>
       </div>
       <p className="text-white/50 text-[13px] mt-1">Upload, Share, Manage Photos - Fast & Free</p>
 
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mt-5">
         <div className="bg-white/5 border border-white/10 rounded-2xl p-3 text-center"><p className="text-[22px] font-black">{history.length}</p><p className="text-[11px] text-white/50">Total Photos</p></div>
         <div className="bg-white/5 border border-white/10 rounded-2xl p-3 text-center"><p className="text-[22px] font-black">{totalSize} MB</p><p className="text-[11px] text-white/50">Storage Used</p></div>
         <div className="bg-white/5 border border-white/10 rounded-2xl p-3 text-center"><p className="text-[22px] font-black">{selected.length}</p><p className="text-[11px] text-white/50">Selected</p></div>
       </div>
 
-      {/* Upload Box */}
       <div onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); handleFiles(e.dataTransfer.files); }} onClick={() => fileRef.current?.click()} className="mt-5 border-2 border-dashed border-purple-500/50 bg-purple-500/5 rounded-3xl p-8 text-center cursor-pointer">
         <div className="text-[45px]">☁️</div>
         <p className="font-bold text-[15px] mt-2">Drag & Drop Images Here</p>
@@ -154,7 +150,6 @@ export default function Home() {
         <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={e => e.target.files && handleFiles(e.target.files)} />
       </div>
 
-      {/* Previews */}
       {previews.length > 0 && (
         <div className="mt-4">
           <div className="flex flex-wrap gap-3">{previews.map((p, i) => (
@@ -165,14 +160,12 @@ export default function Home() {
         </div>
       )}
 
-      {/* History Controls */}
       <div className="flex gap-2 mt-8">
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Search photos..." className="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-2.5 text-[13px] outline-none" />
         <select value={filter} onChange={e => setFilter(e.target.value)} className="bg-white/5 border border-white/10 rounded-full px-3 text-[13px] outline-none text-white"><option value="all" className="text-black">All</option><option value="today" className="text-black">Today</option></select>
       </div>
       {selected.length > 0 && <button onClick={bulkDelete} className="w-full mt-3 bg-red-500 font-bold py-2.5 rounded-full text-[13px]">🗑️ Delete Selected ({selected.length})</button>}
 
-      {/* History Grid */}
       <h2 className="font-black text-[18px] mt-6">Your History ({filtered.length})</h2>
       {filtered.length === 0 ? <p className="text-white/40 text-[13px] mt-3 text-center py-8">No photos yet. Upload your first photo above!</p> : (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-3">
@@ -193,7 +186,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* QR Modal */}
       {qr && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50" onClick={() => setQr("")}>
           <div className="bg-white text-black rounded-3xl p-6 text-center max-w-[300px] w-full" onClick={e => e.stopPropagation()}>
@@ -202,7 +194,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* Toast */}
       {toast && <div className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-white text-black px-5 py-2.5 rounded-full font-bold text-[13px] shadow-2xl z-50">{toast}</div>}
     </div>
   );
